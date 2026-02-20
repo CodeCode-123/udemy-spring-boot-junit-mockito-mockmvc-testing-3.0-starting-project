@@ -27,4 +27,14 @@ public class StudentAndGradeService {
         }
         return false;
     }
+
+    public void deleteStudent(int id) {
+        if (checkIfStudentPresent(id)) {
+            studentDao.deleteById(id);
+        }
+    }
+
+    public Iterable<CollegeStudent> getGradebook() {
+        return studentDao.findAll();
+    }
 }
