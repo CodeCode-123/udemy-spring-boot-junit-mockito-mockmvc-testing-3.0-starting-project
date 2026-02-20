@@ -6,5 +6,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public interface ScienceGradesDao extends CrudRepository<ScienceGrade, Integer> {
-    Iterable<ScienceGrade> findGradeByStudentId(Integer studentId);
+    Iterable<ScienceGrade> findGradeByStudentId(int studentId);
+    void deleteByStudentId(int studentId);
 }

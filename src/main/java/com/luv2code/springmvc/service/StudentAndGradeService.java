@@ -1,9 +1,6 @@
 package com.luv2code.springmvc.service;
 
-import com.luv2code.springmvc.models.CollegeStudent;
-import com.luv2code.springmvc.models.HistoryGrade;
-import com.luv2code.springmvc.models.MathGrade;
-import com.luv2code.springmvc.models.ScienceGrade;
+import com.luv2code.springmvc.models.*;
 import com.luv2code.springmvc.repository.HistoryGradesDao;
 import com.luv2code.springmvc.repository.MathGradesDao;
 import com.luv2code.springmvc.repository.ScienceGradesDao;
@@ -13,6 +10,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -35,6 +34,8 @@ public class StudentAndGradeService {
     private ScienceGradesDao scienceGradesDao;
     @Autowired
     private HistoryGradesDao historyGradesDao;
+    @Autowired
+    StudentGrades studentGrades;
 
     public void createStudent(String firstname, String lastname, String emailAddress) {
         CollegeStudent student = new CollegeStudent(firstname, lastname, emailAddress);
@@ -53,6 +54,9 @@ public class StudentAndGradeService {
     public void deleteStudent(int id) {
         if (checkIfStudentPresent(id)) {
             studentDao.deleteById(id);
+            mathGradesDao.deleteByStudentId(id);
+            scienceGradesDao.deleteByStudentId(id);
+            historyGradesDao.deleteByStudentId(id);
         }
     }
 
@@ -88,5 +92,59 @@ public class StudentAndGradeService {
             }
         }
         return false;
+    }
+    public int deleteGrade(int id, String gradeType) {
+        int studentId = 0;
+        if (gradeType.equals("math")) {
+            Optional<MathGrade> mathGrade = mathGradesDao.findById(id);
+            if (!mathGrade.isPresent()) {
+                return studentId;
+            }
+            studentId = mathGrade.get().getStudentId();
+            mathGradesDao.deleteById(id);
+        }
+        if (gradeType.equals("science")) {
+            Optional<ScienceGrade> scienceGrade = scienceGradesDao.findById(id);
+            if (!scienceGrade.isPresent()) {
+                return studentId;
+            }
+            studentId = scienceGrade.get().getStudentId();
+            scienceGradesDao.deleteById(id);
+        }
+        if (gradeType.equals("history")) {
+            Optional<HistoryGrade> historyGrade = historyGradesDao.findById(id);
+            if (!historyGrade.isPresent()) {
+                return studentId;
+            }
+            studentId = historyGrade.get().getStudentId();
+            historyGradesDao.deleteById(id);
+        }
+        return studentId;
+    }
+
+    public GradebookCollegeStudent studentInformation(int id) {
+        Optional<CollegeStudent> student = studentDao.findById(id);
+        if (!student.isPresent()) {
+            return null;
+        }
+        Iterable<MathGrade> mathGrades = mathGradesDao.findGradeByStudentId(id);
+        Iterable<ScienceGrade> scienceGrades = scienceGradesDao.findGradeByStudentId(id);
+        Iterable<HistoryGrade> historyGrades = historyGradesDao.findGradeByStudentId(id);
+        // convert to List<Grade> and add each grade to the list
+        List<Grade> mathGradesList = new ArrayList<>();
+        mathGrades.forEach(mathGradesList::add);
+        List<Grade> scienceGradesList = new ArrayList<>();
+        scienceGrades.forEach(scienceGradesList::add);
+        List<Grade> historyGradesList = new ArrayList<>();
+        historyGrades.forEach(historyGradesList::add);
+        // set math, science, and history grades
+        studentGrades.setMathGradeResults(mathGradesList);
+        studentGrades.setScienceGradeResults(scienceGradesList);
+        studentGrades.setHistoryGradeResults(historyGradesList);
+        // create the GradebookCollegeStudent object
+        GradebookCollegeStudent gradebookCollegeStudent = new GradebookCollegeStudent(
+                student.get().getId(), student.get().getFirstname(), student.get().getLastname(),
+                student.get().getEmailAddress(), studentGrades);
+        return gradebookCollegeStudent;
     }
 }
